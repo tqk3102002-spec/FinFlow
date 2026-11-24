@@ -1,0 +1,10 @@
+{
+  "projectId": "finflow-management",
+  "appId": "1:458154789010:web:e63ed21ca8fd5277973e4b",
+  "apiKey": "AIzaSyDJhQ3NmX9dXN-JQnYYH9Hz61CpAVCcxsw",
+  "authDomain": "finflow-management.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "finflow-management.firebasestorage.app",
+  "messagingSenderId": "458154789010",
+  "measurementId": "G-SKY0B5S3ZG"
+}

@@ -1,0 +1,518 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Editorial Private Wealth — Light Mode (Alabaster Paper & Deep Spruce Ink) */
+  --background: #F6F5F1;
+  --surface: #FFFFFF;
+  --surface-subtle: #EFEDE7;
+  --border: #E4E2DB;
+  --ink: #141413;
+  --muted: #63625C;
+  --primary: #0E5A4F;
+  --primary-hover: #0A463D;
+  --positive: #137A4B;
+  --warning: #B45309;
+  --negative: #BE123C;
+
+  /* Taste Skill + Animate UI Motion Tokens */
+  --aui-tempo: 1;
+  --aui-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --aui-ease-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --aui-ease-away: cubic-bezier(0.33, 0.17, 0.67, 0.5);
+  --aui-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --aui-ease-enter: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --aui-dur-press: calc(110ms * var(--aui-tempo));
+  --aui-dur-swap: calc(140ms * var(--aui-tempo));
+  --aui-dur-dismiss: calc(180ms * var(--aui-tempo));
+  --aui-dur-indicator: calc(240ms * var(--aui-tempo));
+  --aui-dur-toast-in: calc(220ms * var(--aui-tempo));
+  --aui-dur-panel: calc(200ms * var(--aui-tempo));
+  --aui-dur-modal: calc(260ms * var(--aui-tempo));
+  --aui-dur-shake: calc(360ms * var(--aui-tempo));
+}
+
+/* Editorial Private Wealth — Dark Mode (Obsidian Ledger & Silver Ink) */
+.dark {
+  color-scheme: dark;
+  --background: #0D1117;
+  --surface: #151B23;
+  --surface-subtle: #1C2430;
+  --border: #262F3D;
+  --ink: #ECEBE6;
+  --muted: #8E98A8;
+  --primary: #38B29A;
+  --primary-hover: #2E9B86;
+  --positive: #34D399;
+  --warning: #FBBF24;
+  --negative: #FB7185;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--background);
+  color: var(--ink);
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+  font-optical-sizing: auto;
+}
+
+.font-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Editorial hairline divider utility */
+.editorial-rule {
+  border-color: var(--border);
+}
+
+/* Press-only scale for buttons (90ms-150ms budget) */
+.aui-btn {
+  transition-property: transform, background-color, border-color, color, opacity;
+  transition-duration: var(--aui-dur-press);
+  transition-timing-function: var(--aui-ease-out);
+}
+.aui-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Flat single-elevation interactive surface with subtle 2px hover lift */
+.aui-card {
+  transition-property: transform, border-color, background-color;
+  transition-duration: calc(150ms * var(--aui-tempo));
+  transition-timing-function: var(--aui-ease-out);
+}
+.aui-card-interactive:active {
+  transform: scale(0.99);
+}
+@media (hover: hover) and (pointer: fine) {
+  .aui-card-interactive:hover {
+    transform: translateY(-2px);
+    border-color: #C7C4B8;
+  }
+  .dark .aui-card-interactive:hover {
+    border-color: #3A475B;
+  }
+  .aui-card-interactive:active {
+    transform: scale(0.99);
+  }
+}
+
+.aui-row {
+  transition-property: transform, background-color, border-color;
+  transition-duration: var(--aui-dur-press);
+  transition-timing-function: var(--aui-ease-out);
+}
+.aui-row:active {
+  transform: scale(0.994);
+}
+
+/* Gliding Tab Indicator (240ms) */
+.aui-indicator-pill {
+  position: absolute;
+  left: 0;
+  pointer-events: none;
+  will-change: transform, width;
+  transition-property: transform, width, opacity;
+  transition-duration: var(--aui-dur-indicator);
+  transition-timing-function: var(--aui-ease-out);
+}
+.aui-indicator-pill[data-ready="false"] {
+  transition-duration: 0ms;
+}
+
+/* Panel Transition (200ms, GPU transform + opacity only) */
+@keyframes auiPanelIn {
+  from {
+    opacity: 0;
+    transform: translateX(var(--aui-panel-x, 8px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.aui-panel-in {
+  animation: auiPanelIn var(--aui-dur-panel) var(--aui-ease-enter) both;
+}
+
+/* Modal Crisp Editorial Lift & Fast Dismiss */
+@keyframes auiBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes auiBackdropOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes auiModalTipIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.975);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes auiModalDismiss {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+}
+.aui-modal-backdrop[data-state="open"] {
+  animation: auiBackdropIn calc(180ms * var(--aui-tempo)) var(--aui-ease-out) both;
+}
+.aui-modal-backdrop[data-state="exiting"] {
+  animation: auiBackdropOut var(--aui-dur-dismiss) var(--aui-ease-away) both;
+  pointer-events: none;
+}
+.aui-modal-panel {
+  transform-origin: center top;
+  will-change: transform, opacity;
+}
+.aui-modal-panel[data-state="open"] {
+  animation: auiModalTipIn var(--aui-dur-modal) var(--aui-ease-soft) both;
+}
+.aui-modal-panel[data-state="exiting"] {
+  animation: auiModalDismiss var(--aui-dur-dismiss) var(--aui-ease-away) both;
+}
+
+/* Field Error Shake */
+@keyframes auiFieldShake {
+  0% { transform: translateX(0); }
+  14% { transform: translateX(-3px); }
+  28% { transform: translateX(3px); }
+  42% { transform: translateX(-2px); }
+  57% { transform: translateX(2px); }
+  72% { transform: translateX(-1px); }
+  86% { transform: translateX(1px); }
+  100% { transform: translateX(0); }
+}
+.aui-shake {
+  animation: auiFieldShake var(--aui-dur-shake) var(--aui-ease-in-out) both;
+}
+
+/* Status Button Crossfade-Swap */
+.aui-status-grid {
+  display: inline-grid;
+  place-items: center;
+}
+.aui-status-slot {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  white-space: nowrap;
+  transition-property: opacity, transform;
+  transition-duration: var(--aui-dur-swap);
+  transition-timing-function: var(--aui-ease-out);
+}
+.aui-status-slot[data-active="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+.aui-status-slot[data-active="false"] {
+  opacity: 0;
+  transform: translateY(2px);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Edge Toast Stack */
+@keyframes auiToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes auiToastOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+.aui-toast-item[data-state="open"] {
+  animation: auiToastIn var(--aui-dur-toast-in) var(--aui-ease-out) both;
+}
+.aui-toast-item[data-state="exiting"] {
+  animation: auiToastOut var(--aui-dur-dismiss) var(--aui-ease-away) both;
+  pointer-events: none;
+}
+
+/* Compositor-safe bar & slice transitions */
+.aui-bar-scale {
+  transform-origin: left center;
+  transition-property: transform;
+  transition-duration: calc(240ms * var(--aui-tempo));
+  transition-timing-function: var(--aui-ease-out);
+}
+.aui-donut-slice {
+  transition-property: opacity, transform;
+  transition-duration: calc(160ms * var(--aui-tempo));
+  transition-timing-function: var(--aui-ease-out);
+}
+
+/* Reduced Motion (App Setting & OS prefers-reduced-motion) */
+@keyframes auiReducedFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes auiReducedFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+[data-reduced-motion="true"] .aui-btn:active:not(:disabled),
+[data-reduced-motion="true"] .aui-card-interactive:active,
+[data-reduced-motion="true"] .aui-card-interactive:hover,
+[data-reduced-motion="true"] .aui-row:active {
+  transform: none !important;
+}
+[data-reduced-motion="true"] .aui-panel-in {
+  animation: auiReducedFadeIn 120ms ease-out both !important;
+}
+[data-reduced-motion="true"] .aui-modal-panel[data-state="open"] {
+  animation: auiReducedFadeIn 140ms ease-out both !important;
+  transform: none !important;
+}
+[data-reduced-motion="true"] .aui-modal-panel[data-state="exiting"] {
+  animation: auiReducedFadeOut 110ms ease-out both !important;
+  transform: none !important;
+}
+[data-reduced-motion="true"] .aui-toast-item[data-state="open"] {
+  animation: auiReducedFadeIn 120ms ease-out both !important;
+}
+[data-reduced-motion="true"] .aui-toast-item[data-state="exiting"] {
+  animation: auiReducedFadeOut 110ms ease-out both !important;
+}
+[data-reduced-motion="true"] .aui-shake {
+  animation: none !important;
+}
+[data-reduced-motion="true"] .aui-indicator-pill {
+  transition-duration: 0ms !important;
+}
+[data-reduced-motion="true"] .aui-status-slot {
+  transform: none !important;
+  transition-property: opacity !important;
+  transition-duration: 100ms !important;
+}
+
+/* Synapse-Inspired FinFlow Hero Motion & Surface Utilities */
+@keyframes finflowShimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.finflow-hero-shimmer {
+  background: linear-gradient(
+    90deg,
+    #38B29A 0%,
+    #F6F5F1 36%,
+    #FFFFFF 50%,
+    #E2B05E 70%,
+    #38B29A 100%
+  );
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: finflowShimmer 6.5s cubic-bezier(0.23, 1, 0.32, 1) infinite;
+}
+
+@keyframes finflowShinySpin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.finflow-shiny-btn {
+  position: relative;
+  display: inline-flex;
+  padding: 1.5px;
+  border-radius: 9999px;
+  overflow: hidden;
+  box-shadow:
+    0 0 28px -10px rgba(56, 178, 154, 0.5),
+    0 12px 28px -14px rgba(0, 0, 0, 0.78);
+  transition:
+    transform 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 240ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.finflow-shiny-btn::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 240%;
+  aspect-ratio: 1 / 1;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(56, 178, 154, 0.22) 72deg,
+    #38B29A 138deg,
+    #F6F5F1 168deg,
+    #E2B05E 198deg,
+    transparent 248deg,
+    transparent 360deg
+  );
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: finflowShinySpin 4s linear infinite;
+  will-change: transform;
+}
+
+.finflow-shiny-btn:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 36px -8px rgba(56, 178, 154, 0.65),
+    0 0 24px -10px rgba(226, 176, 94, 0.38);
+}
+
+.finflow-shiny-btn:active {
+  transform: scale(0.975);
+}
+
+.finflow-shiny-inner {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  background: #070B11;
+  color: #F6F5F1;
+  transition: background-color 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.finflow-shiny-btn:hover .finflow-shiny-inner {
+  background: #0D151F;
+}
+
+@keyframes finflowOrbFloatA {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(18px, -22px, 0) scale(1.06); }
+}
+
+@keyframes finflowOrbFloatB {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-20px, 16px, 0) scale(1.05); }
+}
+
+.finflow-orb-a {
+  animation: finflowOrbFloatA 11s ease-in-out infinite;
+  will-change: transform;
+}
+
+.finflow-orb-b {
+  animation: finflowOrbFloatB 14s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes finflowTickerScroll {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+.finflow-ticker-track {
+  display: flex;
+  width: max-content;
+  animation: finflowTickerScroll 38s linear infinite;
+  will-change: transform;
+}
+
+.finflow-ticker-wrap:hover .finflow-ticker-track,
+.finflow-ticker-wrap:focus-within .finflow-ticker-track {
+  animation-play-state: paused;
+}
+
+[data-reduced-motion="true"] .finflow-hero-shimmer,
+[data-reduced-motion="true"] .finflow-shiny-btn::before,
+[data-reduced-motion="true"] .finflow-orb-a,
+[data-reduced-motion="true"] .finflow-orb-b,
+[data-reduced-motion="true"] .finflow-ticker-track {
+  animation: none !important;
+}
+
+[data-reduced-motion="true"] .finflow-hero-shimmer {
+  background-position: 50% 50%;
+}
+
+[data-reduced-motion="true"] .finflow-shiny-btn:hover,
+[data-reduced-motion="true"] .finflow-shiny-btn:active {
+  transform: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aui-btn:active:not(:disabled),
+  .aui-card-interactive:active,
+  .aui-card-interactive:hover,
+  .aui-row:active {
+    transform: none !important;
+  }
+  .aui-panel-in {
+    animation: auiReducedFadeIn 120ms ease-out both !important;
+  }
+  .aui-modal-panel[data-state="open"] {
+    animation: auiReducedFadeIn 140ms ease-out both !important;
+    transform: none !important;
+  }
+  .aui-modal-panel[data-state="exiting"] {
+    animation: auiReducedFadeOut 110ms ease-out both !important;
+    transform: none !important;
+  }
+  .aui-toast-item[data-state="open"] {
+    animation: auiReducedFadeIn 120ms ease-out both !important;
+  }
+  .aui-toast-item[data-state="exiting"] {
+    animation: auiReducedFadeOut 110ms ease-out both !important;
+  }
+  .aui-shake {
+    animation: none !important;
+  }
+  .aui-indicator-pill {
+    transition-duration: 0ms !important;
+  }
+  .aui-status-slot {
+    transform: none !important;
+    transition-property: opacity !important;
+    transition-duration: 100ms !important;
+  }
+  .finflow-hero-shimmer,
+  .finflow-shiny-btn::before,
+  .finflow-orb-a,
+  .finflow-orb-b,
+  .finflow-ticker-track {
+    animation: none !important;
+  }
+  .finflow-hero-shimmer {
+    background-position: 50% 50%;
+  }
+  .finflow-shiny-btn:hover,
+  .finflow-shiny-btn:active {
+    transform: none !important;
+  }
+}

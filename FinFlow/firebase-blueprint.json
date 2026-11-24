@@ -1,0 +1,456 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Private profile and preferences for a FinFlow user.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase Auth UID."
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Display name shown in profile."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 160,
+          "description": "Private user email address."
+        },
+        "authProvider": {
+          "type": "string",
+          "enum": ["google", "password"],
+          "description": "Primary authentication provider."
+        },
+        "usdtVndRate": {
+          "type": "number",
+          "description": "USDT to VND conversion rate for crypto valuation."
+        },
+        "isSampleData": {
+          "type": "boolean",
+          "description": "Whether the account currently holds sample demo data."
+        },
+        "gasSyncUrl": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Optional Google Apps Script Web App URL for two-way sync."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last-updated timestamp."
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "email",
+        "authProvider",
+        "usdtVndRate",
+        "isSampleData",
+        "gasSyncUrl",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Wallet": {
+      "title": "Wallet",
+      "description": "Cash, bank payment account, savings account, or investment purchasing-power wallet owned by a user.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique wallet ID."
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase Auth UID."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Wallet display name."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["CASH", "BANK", "SAVINGS", "INVESTMENT"],
+          "description": "Wallet category."
+        },
+        "cashGroup": {
+          "type": "string",
+          "enum": ["LIVING", "INVESTMENT"],
+          "description": "Cash bucket classification: LIVING (Tiền mặt sinh hoạt) or INVESTMENT (Tiền chờ đầu tư)."
+        },
+        "balance": {
+          "type": "number",
+          "description": "Current balance in VND (>= 0)."
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 240,
+          "description": "Optional note."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last-updated timestamp."
+        }
+      },
+      "required": ["id", "ownerId", "name", "type", "balance", "note", "createdAt", "updatedAt"]
+    },
+    "InvestmentTrade": {
+      "title": "InvestmentTrade",
+      "description": "Buy or sell lot for Vietnam stocks or crypto.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique trade ID."
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase Auth UID."
+        },
+        "assetType": {
+          "type": "string",
+          "enum": ["VN_STOCK", "CRYPTO"],
+          "description": "Asset class."
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16,
+          "pattern": "^[A-Z0-9]+$",
+          "description": "Ticker symbol."
+        },
+        "exchange": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 24,
+          "description": "Exchange code."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["BUY", "SELL"],
+          "description": "Order side."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Executed quantity (> 0)."
+        },
+        "price": {
+          "type": "number",
+          "description": "Executed unit price (> 0)."
+        },
+        "feeAmount": {
+          "type": "number",
+          "description": "Transaction fee in VND or USDT (>= 0)."
+        },
+        "date": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Trade date YYYY-MM-DD."
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 240,
+          "description": "Optional note."
+        },
+        "walletId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Optional linked investment-cash wallet ID synchronized with this trade."
+        },
+        "walletDeltaVnd": {
+          "type": "number",
+          "description": "Signed VND balance delta applied to the linked investment-cash wallet for edit/delete reconciliation."
+        },
+        "fxRateAtExecution": {
+          "type": "number",
+          "description": "Optional historical USDT/VND exchange rate locked at trade execution time (1000..1000000) for Crypto trades."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last-updated timestamp."
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "assetType",
+        "symbol",
+        "exchange",
+        "type",
+        "quantity",
+        "price",
+        "feeAmount",
+        "date",
+        "note",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CashflowEntry": {
+      "title": "CashflowEntry",
+      "description": "Personal income or expense transaction.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique entry ID."
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase Auth UID."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["INCOME", "EXPENSE"],
+          "description": "Cashflow direction."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount in VND (> 0)."
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 48,
+          "description": "Category label."
+        },
+        "date": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Transaction date YYYY-MM-DD."
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 240,
+          "description": "Optional note."
+        },
+        "walletId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Optional linked wallet ID or empty string."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last-updated timestamp."
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "type",
+        "amount",
+        "category",
+        "date",
+        "note",
+        "walletId",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "BudgetRule": {
+      "title": "BudgetRule",
+      "description": "Monthly spending limit for an expense category.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique budget rule ID."
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase Auth UID."
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 48,
+          "description": "Expense category name."
+        },
+        "month": {
+          "type": "string",
+          "minLength": 7,
+          "maxLength": 7,
+          "pattern": "^(DEFAULT|\\d{4}-\\d{2})$",
+          "description": "Target month YYYY-MM or DEFAULT for every month."
+        },
+        "limitAmount": {
+          "type": "number",
+          "description": "Monthly budget ceiling in VND (> 0)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last-updated timestamp."
+        }
+      },
+      "required": ["id", "ownerId", "category", "month", "limitAmount", "createdAt", "updatedAt"]
+    },
+    "CapitalTransfer": {
+      "title": "CapitalTransfer",
+      "description": "Internal capital deposit or withdrawal between living wallets and investment purchasing-power wallets.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique transfer ID."
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase Auth UID."
+        },
+        "direction": {
+          "type": "string",
+          "enum": ["DEPOSIT", "WITHDRAW"],
+          "description": "DEPOSIT into investment wallet or WITHDRAW back to living wallet."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Transfer amount in VND (> 0)."
+        },
+        "sourceWalletId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Source wallet ID or empty string if external."
+        },
+        "targetWalletId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Target wallet ID or empty string if external."
+        },
+        "date": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Transfer date YYYY-MM-DD."
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 240,
+          "description": "Optional audit note."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last-updated timestamp."
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "direction",
+        "amount",
+        "sourceWalletId",
+        "targetWalletId",
+        "date",
+        "note",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private profile and global settings owned strictly by the authenticated user."
+    },
+    "/users/{userId}/wallets/{walletId}": {
+      "schema": { "$ref": "#/entities/Wallet" },
+      "description": "User-owned cash, bank, savings, and investment purchasing-power wallets."
+    },
+    "/users/{userId}/investments/{investmentId}": {
+      "schema": { "$ref": "#/entities/InvestmentTrade" },
+      "description": "User-owned VN stock and crypto buy/sell lots."
+    },
+    "/users/{userId}/cashflows/{cashflowId}": {
+      "schema": { "$ref": "#/entities/CashflowEntry" },
+      "description": "User-owned income and expense ledger records."
+    },
+    "/users/{userId}/budgets/{budgetId}": {
+      "schema": { "$ref": "#/entities/BudgetRule" },
+      "description": "User-owned monthly category spending budgets."
+    },
+    "/users/{userId}/transfers/{transferId}": {
+      "schema": { "$ref": "#/entities/CapitalTransfer" },
+      "description": "User-owned capital deposits and withdrawals between living cash and investment purchasing-power wallets."
+    }
+  }
+}

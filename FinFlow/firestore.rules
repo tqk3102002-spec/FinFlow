@@ -1,0 +1,384 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 4.1: Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // Global Hardened Primitives
+    // =========================================================================
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedOwner(userId) {
+      return isSignedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.uid == userId;
+    }
+
+    function parentUserExists(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+
+    // =========================================================================
+    // Entity Validation Blueprints (Synchronized with firebase-blueprint.json)
+    // =========================================================================
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll([
+          'uid', 'displayName', 'email', 'authProvider',
+          'usdtVndRate', 'isSampleData', 'gasSyncUrl', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'displayName', 'email', 'authProvider',
+          'usdtVndRate', 'isSampleData', 'gasSyncUrl', 'createdAt', 'updatedAt'
+        ])
+        && data.uid == request.auth.uid
+        && data.uid == userId
+        && isValidId(data.uid)
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && data.email is string && data.email.size() <= 160
+        && data.authProvider is string && data.authProvider in ['google', 'password']
+        && data.usdtVndRate is number && data.usdtVndRate >= 1000 && data.usdtVndRate <= 1000000
+        && data.isSampleData is bool
+        && data.gasSyncUrl is string && data.gasSyncUrl.size() <= 500
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidWallet(data, userId, walletId) {
+      return data.keys().hasAll(['id', 'ownerId', 'name', 'type', 'balance', 'note', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerId', 'name', 'type', 'cashGroup', 'balance', 'note', 'createdAt', 'updatedAt'])
+        && data.id == walletId
+        && isValidId(data.id)
+        && data.ownerId == request.auth.uid
+        && data.ownerId == userId
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 80
+        && data.type is string && data.type in ['CASH', 'BANK', 'SAVINGS', 'INVESTMENT']
+        && (!('cashGroup' in data) || (data.cashGroup is string && data.cashGroup in ['LIVING', 'INVESTMENT']))
+        && data.balance is number && data.balance >= 0
+        && data.note is string && data.note.size() <= 240
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidInvestmentTrade(data, userId, investmentId) {
+      return data.keys().hasAll([
+          'id', 'ownerId', 'assetType', 'symbol', 'exchange',
+          'type', 'quantity', 'price', 'feeAmount', 'date', 'note', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'ownerId', 'assetType', 'symbol', 'exchange',
+          'type', 'quantity', 'price', 'feeAmount', 'date', 'note',
+          'walletId', 'walletDeltaVnd', 'fxRateAtExecution', 'createdAt', 'updatedAt'
+        ])
+        && data.id == investmentId
+        && isValidId(data.id)
+        && data.ownerId == request.auth.uid
+        && data.ownerId == userId
+        && data.assetType is string && data.assetType in ['VN_STOCK', 'CRYPTO']
+        && data.symbol is string && data.symbol.size() >= 1 && data.symbol.size() <= 16 && data.symbol.matches('^[A-Z0-9]+$')
+        && data.exchange is string && data.exchange.size() >= 1 && data.exchange.size() <= 24
+        && data.type is string && data.type in ['BUY', 'SELL']
+        && data.quantity is number && data.quantity > 0
+        && data.price is number && data.price > 0
+        && data.feeAmount is number && data.feeAmount >= 0
+        && data.date is string && data.date.size() == 10 && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && data.note is string && data.note.size() <= 240
+        && (!('walletId' in data) || (data.walletId is string && data.walletId.size() <= 128))
+        && (!('walletDeltaVnd' in data) || data.walletDeltaVnd is number)
+        && (!('fxRateAtExecution' in data) || (data.fxRateAtExecution is number && data.fxRateAtExecution >= 1000 && data.fxRateAtExecution <= 1000000))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCashflowEntry(data, userId, cashflowId) {
+      return data.keys().hasAll([
+          'id', 'ownerId', 'type', 'amount', 'category',
+          'date', 'note', 'walletId', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'ownerId', 'type', 'amount', 'category',
+          'date', 'note', 'walletId', 'createdAt', 'updatedAt'
+        ])
+        && data.id == cashflowId
+        && isValidId(data.id)
+        && data.ownerId == request.auth.uid
+        && data.ownerId == userId
+        && data.type is string && data.type in ['INCOME', 'EXPENSE']
+        && data.amount is number && data.amount > 0
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 48
+        && data.date is string && data.date.size() == 10 && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && data.note is string && data.note.size() <= 240
+        && data.walletId is string && data.walletId.size() <= 128
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidBudgetRule(data, userId, budgetId) {
+      return data.keys().hasAll(['id', 'ownerId', 'category', 'month', 'limitAmount', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerId', 'category', 'month', 'limitAmount', 'createdAt', 'updatedAt'])
+        && data.id == budgetId
+        && isValidId(data.id)
+        && data.ownerId == request.auth.uid
+        && data.ownerId == userId
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 48
+        && data.month is string && data.month.size() == 7 && data.month.matches('^(DEFAULT|\\d{4}-\\d{2})$')
+        && data.limitAmount is number && data.limitAmount > 0
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCapitalTransfer(data, userId, transferId) {
+      return data.keys().hasAll([
+          'id', 'ownerId', 'direction', 'amount', 'sourceWalletId',
+          'targetWalletId', 'date', 'note', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'ownerId', 'direction', 'amount', 'sourceWalletId',
+          'targetWalletId', 'date', 'note', 'createdAt', 'updatedAt'
+        ])
+        && data.id == transferId
+        && isValidId(data.id)
+        && data.ownerId == request.auth.uid
+        && data.ownerId == userId
+        && data.direction is string && data.direction in ['DEPOSIT', 'WITHDRAW']
+        && data.amount is number && data.amount > 0
+        && data.sourceWalletId is string && data.sourceWalletId.size() <= 128
+        && data.targetWalletId is string && data.targetWalletId.size() <= 128
+        && data.date is string && data.date.size() == 10 && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && data.note is string && data.note.size() <= 240
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // =========================================================================
+    // Collection Rules: /users/{userId}
+    // =========================================================================
+    match /users/{userId} {
+      allow list: if false;
+      allow get: if isVerifiedOwner(userId) && isValidId(userId);
+
+      allow create: if isVerifiedOwner(userId)
+        && isValidId(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedOwner(userId)
+        && isValidId(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().email == existing().email
+        && incoming().authProvider == existing().authProvider
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action: Update display name
+          incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'updatedAt'])
+          // Action: Update USDT rate, Apps Script URL, or sample data flag
+          || incoming().diff(existing()).affectedKeys().hasOnly(['usdtVndRate', 'updatedAt'])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['gasSyncUrl', 'updatedAt'])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['isSampleData', 'updatedAt'])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['usdtVndRate', 'isSampleData', 'gasSyncUrl', 'updatedAt'])
+        );
+
+      allow delete: if false;
+
+      // -----------------------------------------------------------------------
+      // Subcollection: /users/{userId}/wallets/{walletId}
+      // -----------------------------------------------------------------------
+      match /wallets/{walletId} {
+        allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
+        allow get: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(walletId) && parentUserExists(userId);
+
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(walletId)
+          && isValidWallet(incoming(), userId, walletId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && parentUserExists(userId);
+
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(walletId)
+          && isValidWallet(incoming(), userId, walletId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            // Action: Edit wallet metadata, cashGroup, or balance
+            incoming().diff(existing()).affectedKeys().hasOnly(['name', 'type', 'cashGroup', 'balance', 'note', 'updatedAt'])
+            // Action: Atomic balance sync from cashflow, investment trade, or capital transfer
+            || incoming().diff(existing()).affectedKeys().hasOnly(['balance', 'updatedAt'])
+          )
+          && parentUserExists(userId);
+
+        allow delete: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(walletId)
+          && existing().ownerId == request.auth.uid
+          && parentUserExists(userId);
+      }
+
+      // -----------------------------------------------------------------------
+      // Subcollection: /users/{userId}/investments/{investmentId}
+      // -----------------------------------------------------------------------
+      match /investments/{investmentId} {
+        allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
+        allow get: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(investmentId) && parentUserExists(userId);
+
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(investmentId)
+          && isValidInvestmentTrade(incoming(), userId, investmentId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && parentUserExists(userId);
+
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(investmentId)
+          && isValidInvestmentTrade(incoming(), userId, investmentId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'assetType', 'symbol', 'exchange', 'type',
+            'quantity', 'price', 'feeAmount', 'date', 'note',
+            'walletId', 'walletDeltaVnd', 'fxRateAtExecution', 'updatedAt'
+          ])
+          && parentUserExists(userId);
+
+        allow delete: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(investmentId)
+          && existing().ownerId == request.auth.uid
+          && parentUserExists(userId);
+      }
+
+      // -----------------------------------------------------------------------
+      // Subcollection: /users/{userId}/cashflows/{cashflowId}
+      // -----------------------------------------------------------------------
+      match /cashflows/{cashflowId} {
+        allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
+        allow get: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(cashflowId) && parentUserExists(userId);
+
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(cashflowId)
+          && isValidCashflowEntry(incoming(), userId, cashflowId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && parentUserExists(userId);
+
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(cashflowId)
+          && isValidCashflowEntry(incoming(), userId, cashflowId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'type', 'amount', 'category', 'date', 'note', 'walletId', 'updatedAt'
+          ])
+          && parentUserExists(userId);
+
+        allow delete: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(cashflowId)
+          && existing().ownerId == request.auth.uid
+          && parentUserExists(userId);
+      }
+
+      // -----------------------------------------------------------------------
+      // Subcollection: /users/{userId}/budgets/{budgetId}
+      // -----------------------------------------------------------------------
+      match /budgets/{budgetId} {
+        allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
+        allow get: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(budgetId) && parentUserExists(userId);
+
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(budgetId)
+          && isValidBudgetRule(incoming(), userId, budgetId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && parentUserExists(userId);
+
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(budgetId)
+          && isValidBudgetRule(incoming(), userId, budgetId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'category', 'month', 'limitAmount', 'updatedAt'
+          ])
+          && parentUserExists(userId);
+
+        allow delete: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(budgetId)
+          && existing().ownerId == request.auth.uid
+          && parentUserExists(userId);
+      }
+
+      // -----------------------------------------------------------------------
+      // Subcollection: /users/{userId}/transfers/{transferId}
+      // -----------------------------------------------------------------------
+      match /transfers/{transferId} {
+        allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
+        allow get: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(transferId) && parentUserExists(userId);
+
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(transferId)
+          && isValidCapitalTransfer(incoming(), userId, transferId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && parentUserExists(userId);
+
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(transferId)
+          && isValidCapitalTransfer(incoming(), userId, transferId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'direction', 'amount', 'sourceWalletId', 'targetWalletId', 'date', 'note', 'updatedAt'
+          ])
+          && parentUserExists(userId);
+
+        allow delete: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(transferId)
+          && existing().ownerId == request.auth.uid
+          && parentUserExists(userId);
+      }
+    }
+  }
+}

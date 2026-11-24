@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>FinFlow — Quản lý Tài sản &amp; Thu Chi</title>
+    <meta
+      name="description"
+      content="Ứng dụng quản lý tài sản thực tế (Tiền mặt, Chứng khoán VN, Crypto), vốn đã đầu tư, ngân sách chi tiêu và dòng tiền cá nhân đồng bộ đám mây Firebase."
+    />
+    <meta property="og:title" content="FinFlow — Quản lý Tài sản &amp; Thu Chi" />
+    <meta
+      property="og:description"
+      content="Ứng dụng quản lý tài sản thực tế (Tiền mặt, Chứng khoán VN, Crypto), vốn đã đầu tư, ngân sách chi tiêu và dòng tiền cá nhân đồng bộ đám mây Firebase."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem('finflow_v3_theme') === 'dark') {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="bg-[#F6F5F1] dark:bg-[#0D1117] text-[#141413] dark:text-[#ECEBE6] antialiased selection:bg-[#0E5A4F]/15 dark:selection:bg-[#38B29A]/25 selection:text-[#0E5A4F] dark:selection:text-[#ECEBE6] transition-colors duration-200">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
