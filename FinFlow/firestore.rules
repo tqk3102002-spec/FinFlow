@@ -28,12 +28,7 @@ service cloud.firestore {
 
     function isVerifiedOwner(userId) {
       return isSignedIn()
-        && request.auth.token.email_verified == true
         && request.auth.uid == userId;
-    }
-
-    function parentUserExists(userId) {
-      return exists(/databases/$(database)/documents/users/$(userId));
     }
 
     // =========================================================================
@@ -186,7 +181,7 @@ service cloud.firestore {
         && incoming().uid == existing().uid
         && incoming().email == existing().email
         && incoming().authProvider == existing().authProvider
-        && incoming().createdAt == existing().createdAt
+        && (incoming().createdAt == existing().createdAt || incoming().createdAt == request.time)
         && incoming().updatedAt == request.time
         && (
           // Action: Update display name
@@ -196,6 +191,8 @@ service cloud.firestore {
           || incoming().diff(existing()).affectedKeys().hasOnly(['gasSyncUrl', 'updatedAt'])
           || incoming().diff(existing()).affectedKeys().hasOnly(['isSampleData', 'updatedAt'])
           || incoming().diff(existing()).affectedKeys().hasOnly(['usdtVndRate', 'isSampleData', 'gasSyncUrl', 'updatedAt'])
+          // Action: Idempotent profile seed via setDoc
+          || incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'authProvider', 'usdtVndRate', 'isSampleData', 'gasSyncUrl', 'createdAt', 'updatedAt'])
         );
 
       allow delete: if false;
@@ -205,15 +202,14 @@ service cloud.firestore {
       // -----------------------------------------------------------------------
       match /wallets/{walletId} {
         allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
-        allow get: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(walletId) && parentUserExists(userId);
+        allow get: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(walletId);
 
         allow create: if isVerifiedOwner(userId)
           && isValidId(userId)
           && isValidId(walletId)
           && isValidWallet(incoming(), userId, walletId)
           && incoming().createdAt == request.time
-          && incoming().updatedAt == request.time
-          && parentUserExists(userId);
+          && incoming().updatedAt == request.time;
 
         allow update: if isVerifiedOwner(userId)
           && isValidId(userId)
@@ -221,21 +217,19 @@ service cloud.firestore {
           && isValidWallet(incoming(), userId, walletId)
           && incoming().id == existing().id
           && incoming().ownerId == existing().ownerId
-          && incoming().createdAt == existing().createdAt
+          && (incoming().createdAt == existing().createdAt || incoming().createdAt == request.time)
           && incoming().updatedAt == request.time
           && (
-            // Action: Edit wallet metadata, cashGroup, or balance
-            incoming().diff(existing()).affectedKeys().hasOnly(['name', 'type', 'cashGroup', 'balance', 'note', 'updatedAt'])
+            // Action: Edit wallet metadata, cashGroup, or balance (or idempotent setDoc)
+            incoming().diff(existing()).affectedKeys().hasOnly(['name', 'type', 'cashGroup', 'balance', 'note', 'createdAt', 'updatedAt'])
             // Action: Atomic balance sync from cashflow, investment trade, or capital transfer
             || incoming().diff(existing()).affectedKeys().hasOnly(['balance', 'updatedAt'])
-          )
-          && parentUserExists(userId);
+          );
 
         allow delete: if isVerifiedOwner(userId)
           && isValidId(userId)
           && isValidId(walletId)
-          && existing().ownerId == request.auth.uid
-          && parentUserExists(userId);
+          && existing().ownerId == request.auth.uid;
       }
 
       // -----------------------------------------------------------------------
@@ -243,15 +237,14 @@ service cloud.firestore {
       // -----------------------------------------------------------------------
       match /investments/{investmentId} {
         allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
-        allow get: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(investmentId) && parentUserExists(userId);
+        allow get: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(investmentId);
 
         allow create: if isVerifiedOwner(userId)
           && isValidId(userId)
           && isValidId(investmentId)
           && isValidInvestmentTrade(incoming(), userId, investmentId)
           && incoming().createdAt == request.time
-          && incoming().updatedAt == request.time
-          && parentUserExists(userId);
+          && incoming().updatedAt == request.time;
 
         allow update: if isVerifiedOwner(userId)
           && isValidId(userId)
@@ -259,20 +252,18 @@ service cloud.firestore {
           && isValidInvestmentTrade(incoming(), userId, investmentId)
           && incoming().id == existing().id
           && incoming().ownerId == existing().ownerId
-          && incoming().createdAt == existing().createdAt
+          && (incoming().createdAt == existing().createdAt || incoming().createdAt == request.time)
           && incoming().updatedAt == request.time
           && incoming().diff(existing()).affectedKeys().hasOnly([
             'assetType', 'symbol', 'exchange', 'type',
             'quantity', 'price', 'feeAmount', 'date', 'note',
-            'walletId', 'walletDeltaVnd', 'fxRateAtExecution', 'updatedAt'
-          ])
-          && parentUserExists(userId);
+            'walletId', 'walletDeltaVnd', 'fxRateAtExecution', 'createdAt', 'updatedAt'
+          ]);
 
         allow delete: if isVerifiedOwner(userId)
           && isValidId(userId)
           && isValidId(investmentId)
-          && existing().ownerId == request.auth.uid
-          && parentUserExists(userId);
+          && existing().ownerId == request.auth.uid;
       }
 
       // -----------------------------------------------------------------------
@@ -280,15 +271,14 @@ service cloud.firestore {
       // -----------------------------------------------------------------------
       match /cashflows/{cashflowId} {
         allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
-        allow get: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(cashflowId) && parentUserExists(userId);
+        allow get: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(cashflowId);
 
         allow create: if isVerifiedOwner(userId)
           && isValidId(userId)
           && isValidId(cashflowId)
           && isValidCashflowEntry(incoming(), userId, cashflowId)
           && incoming().createdAt == request.time
-          && incoming().updatedAt == request.time
-          && parentUserExists(userId);
+          && incoming().updatedAt == request.time;
 
         allow update: if isVerifiedOwner(userId)
           && isValidId(userId)
@@ -296,18 +286,16 @@ service cloud.firestore {
           && isValidCashflowEntry(incoming(), userId, cashflowId)
           && incoming().id == existing().id
           && incoming().ownerId == existing().ownerId
-          && incoming().createdAt == existing().createdAt
+          && (incoming().createdAt == existing().createdAt || incoming().createdAt == request.time)
           && incoming().updatedAt == request.time
           && incoming().diff(existing()).affectedKeys().hasOnly([
-            'type', 'amount', 'category', 'date', 'note', 'walletId', 'updatedAt'
-          ])
-          && parentUserExists(userId);
+            'type', 'amount', 'category', 'date', 'note', 'walletId', 'createdAt', 'updatedAt'
+          ]);
 
         allow delete: if isVerifiedOwner(userId)
           && isValidId(userId)
           && isValidId(cashflowId)
-          && existing().ownerId == request.auth.uid
-          && parentUserExists(userId);
+          && existing().ownerId == request.auth.uid;
       }
 
       // -----------------------------------------------------------------------
@@ -315,15 +303,14 @@ service cloud.firestore {
       // -----------------------------------------------------------------------
       match /budgets/{budgetId} {
         allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
-        allow get: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(budgetId) && parentUserExists(userId);
+        allow get: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(budgetId);
 
         allow create: if isVerifiedOwner(userId)
           && isValidId(userId)
           && isValidId(budgetId)
           && isValidBudgetRule(incoming(), userId, budgetId)
           && incoming().createdAt == request.time
-          && incoming().updatedAt == request.time
-          && parentUserExists(userId);
+          && incoming().updatedAt == request.time;
 
         allow update: if isVerifiedOwner(userId)
           && isValidId(userId)
@@ -331,18 +318,16 @@ service cloud.firestore {
           && isValidBudgetRule(incoming(), userId, budgetId)
           && incoming().id == existing().id
           && incoming().ownerId == existing().ownerId
-          && incoming().createdAt == existing().createdAt
+          && (incoming().createdAt == existing().createdAt || incoming().createdAt == request.time)
           && incoming().updatedAt == request.time
           && incoming().diff(existing()).affectedKeys().hasOnly([
-            'category', 'month', 'limitAmount', 'updatedAt'
-          ])
-          && parentUserExists(userId);
+            'category', 'month', 'limitAmount', 'createdAt', 'updatedAt'
+          ]);
 
         allow delete: if isVerifiedOwner(userId)
           && isValidId(userId)
           && isValidId(budgetId)
-          && existing().ownerId == request.auth.uid
-          && parentUserExists(userId);
+          && existing().ownerId == request.auth.uid;
       }
 
       // -----------------------------------------------------------------------
@@ -350,15 +335,14 @@ service cloud.firestore {
       // -----------------------------------------------------------------------
       match /transfers/{transferId} {
         allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
-        allow get: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(transferId) && parentUserExists(userId);
+        allow get: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(transferId);
 
         allow create: if isVerifiedOwner(userId)
           && isValidId(userId)
           && isValidId(transferId)
           && isValidCapitalTransfer(incoming(), userId, transferId)
           && incoming().createdAt == request.time
-          && incoming().updatedAt == request.time
-          && parentUserExists(userId);
+          && incoming().updatedAt == request.time;
 
         allow update: if isVerifiedOwner(userId)
           && isValidId(userId)
@@ -366,18 +350,16 @@ service cloud.firestore {
           && isValidCapitalTransfer(incoming(), userId, transferId)
           && incoming().id == existing().id
           && incoming().ownerId == existing().ownerId
-          && incoming().createdAt == existing().createdAt
+          && (incoming().createdAt == existing().createdAt || incoming().createdAt == request.time)
           && incoming().updatedAt == request.time
           && incoming().diff(existing()).affectedKeys().hasOnly([
-            'direction', 'amount', 'sourceWalletId', 'targetWalletId', 'date', 'note', 'updatedAt'
-          ])
-          && parentUserExists(userId);
+            'direction', 'amount', 'sourceWalletId', 'targetWalletId', 'date', 'note', 'createdAt', 'updatedAt'
+          ]);
 
         allow delete: if isVerifiedOwner(userId)
           && isValidId(userId)
           && isValidId(transferId)
-          && existing().ownerId == request.auth.uid
-          && parentUserExists(userId);
+          && existing().ownerId == request.auth.uid;
       }
     }
   }

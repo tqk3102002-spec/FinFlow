@@ -339,7 +339,7 @@ export default function App() {
   }, []);
 
   const isCloudEligible = Boolean(
-    account && !account.isGuest && account.emailVerified
+    account && account.authProvider === 'google' && !account.isGuest
   );
 
   // Mirror state to localStorage whenever state changes
@@ -616,12 +616,8 @@ export default function App() {
       };
     }
 
-    // Branch B: Firebase Google Sign-In + Cloud Firestore real-time sync
+    // Branch B: Firebase Auth (Google or Email/Password) + Cloud Firestore real-time sync
     setHydratedUid(account.uid);
-    if (!account.emailVerified) {
-      setSyncMode('VERIFY_EMAIL');
-      return;
-    }
 
     let active = true;
     let unsubFirestore: (() => void) | null = null;
@@ -639,6 +635,13 @@ export default function App() {
 
     const startSync = async () => {
       try {
+        if (auth.currentUser) {
+          try {
+            await auth.currentUser.getIdToken(true);
+          } catch {
+            // Non-blocking token refresh before initial Firestore handshake
+          }
+        }
         await ensureUserProfileAndSeedIfNew(account);
         if (!active) return;
 
@@ -2417,6 +2420,11 @@ export default function App() {
                   onClick={async () => {
                     await auth.currentUser?.reload();
                     if (auth.currentUser?.emailVerified) {
+                      try {
+                        await auth.currentUser.getIdToken(true);
+                      } catch {
+                        // Ignore token refresh errors
+                      }
                       setAccount((prev) => (prev ? { ...prev, emailVerified: true } : prev));
                       showToast('Email đã xác minh. Đang kích hoạt đồng bộ Cloud Firestore.');
                     } else {

@@ -14,7 +14,7 @@ import {
   writeBatch,
   type Unsubscribe,
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from './firebase';
+import { auth, db, handleFirestoreError, OperationType } from './firebase';
 import {
   getWalletCashGroup,
   SCHEMA_LIMITS,
@@ -420,7 +420,7 @@ export async function ensureUserProfileAndSeedIfNew(
   const userPath = `users/${account.uid}`;
   const userRef = doc(db, 'users', account.uid);
 
-  try {
+  const attemptEnsure = async (): Promise<{ profile: UserProfileDoc; isNew: boolean }> => {
     const snap = await getDoc(userRef);
     if (snap.exists()) {
       const data = snap.data();
@@ -438,13 +438,16 @@ export async function ensureUserProfileAndSeedIfNew(
       };
     }
 
+    const cleanDisplayName = (
+      account.displayName?.trim() ||
+      account.email?.split('@')[0]?.trim() ||
+      'Người dùng'
+    ).slice(0, SCHEMA_LIMITS.DISPLAY_NAME_MAX);
+
     const profilePayload = {
       uid: account.uid,
-      displayName: (account.displayName || account.email.split('@')[0] || 'Người dùng').slice(
-        0,
-        SCHEMA_LIMITS.DISPLAY_NAME_MAX
-      ),
-      email: (account.email || '').slice(0, SCHEMA_LIMITS.EMAIL_MAX),
+      displayName: cleanDisplayName,
+      email: (account.email || '').trim().slice(0, SCHEMA_LIMITS.EMAIL_MAX),
       authProvider: account.authProvider === 'password' ? ('password' as const) : ('google' as const),
       usdtVndRate: clampUsdtRate(25450),
       isSampleData: false,
@@ -468,8 +471,24 @@ export async function ensureUserProfileAndSeedIfNew(
         gasSyncUrl: '',
       },
     };
-  } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, userPath);
+  };
+
+  try {
+    return await attemptEnsure();
+  } catch (firstError) {
+    const msg = firstError instanceof Error ? firstError.message.toLowerCase() : String(firstError).toLowerCase();
+    if (
+      auth.currentUser &&
+      (msg.includes('insufficient permissions') || msg.includes('permission-denied'))
+    ) {
+      try {
+        await auth.currentUser.getIdToken(true);
+        return await attemptEnsure();
+      } catch (retryError) {
+        handleFirestoreError(retryError, OperationType.WRITE, userPath);
+      }
+    }
+    handleFirestoreError(firstError, OperationType.WRITE, userPath);
   }
 }
 

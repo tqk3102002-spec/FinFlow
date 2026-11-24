@@ -370,7 +370,7 @@ export function AuthScreen({
     );
     setAuthModalOpen(false);
     showToast(
-      'Đã tạo tài khoản! Vui lòng mở hộp thư email và bấm vào liên kết xác minh để kích hoạt đồng bộ đám mây.'
+      `Đã tạo tài khoản ${cleanName || cleanEmail.split('@')[0]}! Dữ liệu của bạn được đồng bộ trực tiếp lên Cloud Firestore.`
     );
   } else {
     await signInEmailPassword(cleanEmail, password);
@@ -543,12 +543,12 @@ export function AuthScreen({
             />
 
             {/* Layer 3: Centered Massive Editorial Focal Stage */}
-            <div className="relative z-10 flex-1 w-full max-w-[980px] mx-auto px-6 py-16 sm:py-24 flex flex-col items-center justify-center text-center">
+            <div className="relative z-10 flex-1 w-full max-w-[980px] mx-auto px-4 sm:px-6 py-16 sm:py-24 flex flex-col items-center justify-center text-center">
               <motion.p
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.48, delay: 0.04, ease: SYNAPSE_EASE }}
-                className="text-xs font-medium tracking-[0.2em] text-[#38B29A] mb-6"
+                className="text-[10.5px] sm:text-xs font-medium tracking-[0.07em] sm:tracking-[0.2em] whitespace-nowrap text-[#38B29A] mb-5 sm:mb-6"
               >
                 Nền tảng Quản trị Tài sản &amp; Thu Chi Cá nhân
               </motion.p>
@@ -557,7 +557,7 @@ export function AuthScreen({
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.56, delay: 0.12, ease: SYNAPSE_EASE }}
-                className="font-display text-6xl sm:text-8xl lg:text-[106px] font-semibold tracking-[-0.04em] leading-[0.94] text-[#F6F5F1]"
+                className="font-display text-[clamp(3.5rem,15vw,6.625rem)] font-semibold tracking-[-0.04em] leading-[0.94] whitespace-nowrap text-[#F6F5F1]"
               >
                 Fin<span className="finflow-hero-shimmer">Flow</span>
               </motion.h1>
@@ -566,7 +566,7 @@ export function AuthScreen({
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.54, delay: 0.2, ease: SYNAPSE_EASE }}
-                className="mt-5 font-display text-xl sm:text-3xl lg:text-[34px] font-medium tracking-[-0.02em] text-[#E2B05E]"
+                className="mt-4 sm:mt-5 font-display text-[clamp(1.15rem,4.6vw,2.125rem)] font-medium tracking-[-0.02em] whitespace-nowrap text-[#E2B05E]"
               >
                 “Chính xác, tiện dụng, tiết kiệm”
               </motion.p>
@@ -575,10 +575,10 @@ export function AuthScreen({
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.52, delay: 0.28, ease: SYNAPSE_EASE }}
-                className="mt-5 max-w-[580px] text-sm sm:text-base text-[#A8B3C4] leading-relaxed"
+                className="mt-4 sm:mt-5 max-w-[340px] sm:max-w-[560px] text-[13px] sm:text-base text-[#A8B3C4] leading-relaxed text-balance"
               >
                 Hợp nhất tài sản thực tế, giá vốn đầu tư và dòng tiền thu chi hằng tháng trên một
-                sổ cái rõ nét — dễ theo dõi mỗi ngày và tự động lưu riêng cho từng tài khoản.
+                sổ cái rõ nét — dễ theo dõi mỗi ngày và tự động lưu riêng cho từng tài&nbsp;khoản.
               </motion.p>
 
               {/* Signature Synapse-Style Shiny Border CTA + Minimal Guest Action */}
@@ -586,23 +586,23 @@ export function AuthScreen({
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.54, delay: 0.36, ease: SYNAPSE_EASE }}
-                className="mt-10 flex flex-wrap items-center justify-center gap-4"
+                className="mt-8 sm:mt-10 flex flex-row flex-wrap items-center justify-center gap-2.5 sm:gap-4"
               >
                 <button
                   type="button"
                   onClick={() => openAuthModal('REGISTER')}
                   className="finflow-shiny-btn group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#38B29A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#030508]"
                 >
-                  <span className="finflow-shiny-inner px-8 py-3.5 text-sm font-semibold whitespace-nowrap">
+                  <span className="finflow-shiny-inner px-5 sm:px-8 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold whitespace-nowrap">
                     <span>Bắt đầu miễn phí</span>
-                    <ArrowRight className="w-4 h-4 text-[#38B29A] transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-x-0.5" />
+                    <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#38B29A] transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-x-0.5" />
                   </span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => onGuestMode('CONTINUE')}
-                  className="aui-btn px-6 py-3.5 rounded-full bg-white/[0.04] hover:bg-white/[0.09] border border-white/12 hover:border-white/25 text-[#DCE3EC] hover:text-white text-sm font-medium whitespace-nowrap transition-colors duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]"
+                  className="aui-btn px-4 sm:px-6 py-3 sm:py-3.5 rounded-full bg-white/[0.04] hover:bg-white/[0.09] border border-white/12 hover:border-white/25 text-[#DCE3EC] hover:text-white text-xs sm:text-sm font-medium whitespace-nowrap transition-colors duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]"
                 >
                   {deviceGuest ? 'Tiếp tục Tài khoản khách' : 'Vào Tài khoản khách'}
                 </button>
